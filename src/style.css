@@ -1,5 +1,20 @@
+:root {
+  --light-gray: #e7ecef;
+  --dark-blue: #274c77;
+  --medium-blue: #6096ba;
+  --light-blue: #a3cef1;
+  --gray: #8b8c89;
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+.container {
+  width: 1200px;
+  max-height: 100%;
+  /* border: 1px solid black;   */
+  margin: 0 auto;
 }
