@@ -1,8 +1,9 @@
 <template>
     <div class="grid">
         <div v-for="(row, rowIndex) in grid" :key="rowIndex" class="row">
-            <div v-for="(cell, colIndex) in row" :key="colIndex" class="cell" :class="['cell', { 'ship': cell.isShip }]"
-                @click="fire(rowIndex, colIndex)">
+            <div v-for="(cell, colIndex) in row" :key="colIndex" class="cell"
+                :class="['cell', { 'ship': cell.isShip, 'hit': cell.isHit, 'miss': cell.isActive }]"
+                @click="launchAttack(rowIndex, colIndex)">
                 <!-- cell content end logic -->
             </div>
         </div>
@@ -32,16 +33,47 @@ export default {
         }
     },
     methods: {
-        CreateGrid() {
+        createGrid() {
             this.grid = Array.from({ length: this.rows }, (_, rowIndex) =>
                 Array.from({ length: this.cols }, (_, colIndex) => ({
                     isActive: false,
                     isShip: false,
+                    isHit: false,
                     label: `Row ${rowIndex + 1}, Col ${colIndex + 1}`
                 })))
             console.log(this.grid)
-            this.PlaceAllShip()
+            this.placeAllShip()
         },
+
+        surroundingCell(startRow, startCol, length, direzione) {
+            let beginningRow, endRow, beginningCol, endCol;
+
+            if (direzione === 0) { // Orizzontal
+                beginningRow = Math.max(startRow - 1, 0); // Top row (if egsist)
+                endRow = Math.min(startRow + 1, this.rows - 1); // Bottom row (if egsist)
+                beginningCol = Math.max(startCol - 1, 0); // Column to the left of the ship
+                endCol = Math.min(startCol + length, this.cols - 1); // Column to the right of the ship
+
+            } else { // Vertical
+                beginningRow = Math.max(startRow - 1, 0); // Top row (if egsist)
+                endRow = Math.min(startRow + length, this.rows - 1); // Bottom row (if egsist)
+                beginningCol = Math.max(startCol - 1, 0); // Column to the left of the ship
+                endCol = Math.min(startCol + 1, this.cols - 1); // Column to the right of the ship
+
+            }
+
+            // Chech surrounding cell of ship
+            for (let i = beginningRow; i <= endRow; i++) {
+                for (let j = beginningCol; j <= endCol; j++) {
+                    if (this.grid[i][j].isShip) {
+                        return false; // If there is an adjacent ship, we cannot place it here
+                    }
+                }
+            }
+
+            return true;
+        },
+
 
         PlaceShip(ship) {
             let set = false
@@ -60,7 +92,7 @@ export default {
                             break
                         }
                     }
-                    if (emptySpace) {
+                    if (emptySpace && this.surroundingCell(startRow, startCol, ship.length, direction)) {
                         for (let i = 0; i < ship.length; i++) {
                             this.grid[startRow][startCol + i].isShip = true
                         }
@@ -77,7 +109,7 @@ export default {
                             break
                         }
                     }
-                    if (emptySpace) {
+                    if (emptySpace && this.surroundingCell(startRow, startCol, ship.length, direction)) {
                         for (let i = 0; i < ship.length; i++) {
                             this.grid[startRow + i][startCol].isShip = true
                         }
@@ -86,17 +118,25 @@ export default {
                 }
             }
         },
-        PlaceAllShip() {
+        placeAllShip() {
             this.ships.forEach(ship => this.PlaceShip(ship))
         },
-        fire(row, col) {
-            if (this.grid[row][col].isShip)
-                alert('hit')
+        launchAttack(row, col) {
+            console.log('lunchAttack called')
+            if (this.grid[row][col].isShip && !this.grid[row][col].isActive) {
+                this.grid[row][col].isHit = true
+                this.grid[row][col].isActive = true
+            } else if (!this.grid[row][col].isActive) {
+                this.grid[row][col].isActive = true
+            }
+
+
         }
 
     },
     created() {
-        this.CreateGrid()
+        this.createGrid()
+
     }
 }
 </script>
@@ -124,5 +164,13 @@ export default {
 
 .ship {
     background-color: var(--gray) !important;
+}
+
+.hit {
+    background-color: red !important;
+}
+
+.miss {
+    background-color: var(--light-gray);
 }
 </style>
