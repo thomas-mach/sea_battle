@@ -2,7 +2,7 @@
     <div class="grid">
         <div v-for="(row, rowIndex) in grid" :key="rowIndex" class="row">
             <div v-for="(cell, colIndex) in row" :key="colIndex" class="cell"
-                :class="['cell', { 'ship': cell.isShip, 'hit': cell.isHit, 'miss': cell.isActive }]"
+                :class="['cell', { [shipClass]: cell.isShip, 'hit': cell.isHit, 'miss': cell.isActive }]"
                 @click="launchAttack(rowIndex, colIndex)">
                 <!-- cell content end logic -->
             </div>
@@ -11,6 +11,7 @@
 </template>
 
 <script>
+import { placeShip } from "./utils/placeShip.js"
 export default {
     name: "GameGrid",
     data() {
@@ -30,6 +31,12 @@ export default {
                 { length: 1 },
                 { length: 1 },
             ]
+        }
+    },
+
+    props: {
+        shipClass: {
+            type: String
         }
     },
     methods: {
@@ -74,53 +81,10 @@ export default {
             return true;
         },
 
-
-        PlaceShip(ship) {
-            let set = false
-
-            while (!set) {
-                const direction = Math.floor(Math.random() * 2)
-                let startRow, startCol
-                if (direction === 0) {
-                    startRow = Math.floor(Math.random() * this.rows)
-                    startCol = Math.floor(Math.random() * (this.cols - ship.length + 1))
-                    let emptySpace = true
-
-                    for (let i = 0; i < ship.length; i++) {
-                        if (this.grid[startRow][startCol + i].isShip) {
-                            emptySpace = false
-                            break
-                        }
-                    }
-                    if (emptySpace && this.surroundingCell(startRow, startCol, ship.length, direction)) {
-                        for (let i = 0; i < ship.length; i++) {
-                            this.grid[startRow][startCol + i].isShip = true
-                        }
-                        set = true
-                    }
-                } else {
-                    startRow = Math.floor(Math.random() * (this.rows - ship.length + 1))
-                    startCol = Math.floor(Math.random() * this.cols)
-                    let emptySpace = true
-
-                    for (let i = 0; i < ship.length; i++) {
-                        if (this.grid[startRow + i][startCol].isShip) {
-                            emptySpace = false
-                            break
-                        }
-                    }
-                    if (emptySpace && this.surroundingCell(startRow, startCol, ship.length, direction)) {
-                        for (let i = 0; i < ship.length; i++) {
-                            this.grid[startRow + i][startCol].isShip = true
-                        }
-                        set = true
-                    }
-                }
-            }
-        },
         placeAllShip() {
-            this.ships.forEach(ship => this.PlaceShip(ship))
+            this.ships.forEach(ship => placeShip(this.grid, ship, this.rows, this.cols, this.surroundingCell))
         },
+
         launchAttack(row, col) {
             console.log('lunchAttack called')
             if (this.grid[row][col].isShip && !this.grid[row][col].isActive) {
@@ -129,15 +93,12 @@ export default {
             } else if (!this.grid[row][col].isActive) {
                 this.grid[row][col].isActive = true
             }
-
-
         }
-
     },
     created() {
         this.createGrid()
+    },
 
-    }
 }
 </script>
 

@@ -6,7 +6,7 @@
                     <GameGrid />
                 </div>
                 <div class="col">
-                    <GameGrid />
+                    <GameGrid shipClass="ship" />
                 </div>
             </div>
         </div>
@@ -21,6 +21,8 @@ export default {
         GameGrid
     }
 }
+
+
 </script>
 
 <style scoped>
