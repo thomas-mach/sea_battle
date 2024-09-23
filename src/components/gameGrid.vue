@@ -2,7 +2,7 @@
     <div class="grid">
         <div v-for="(row, rowIndex) in grid" :key="rowIndex" class="row">
             <div v-for="(cell, colIndex) in row" :key="colIndex" class="cell" :class="['cell', { 'ship': cell.isShip }]"
-                v-bind="PlaceShip(rowIndex, colIndex)">
+                @click="fire(rowIndex, colIndex)">
                 <!-- cell content end logic -->
             </div>
         </div>
@@ -16,7 +16,19 @@ export default {
         return {
             rows: 10,
             cols: 10,
-            grid: []
+            grid: [],
+            ships: [
+                { length: 4 },
+                { length: 3 },
+                { length: 3 },
+                { length: 2 },
+                { length: 2 },
+                { length: 2 },
+                { length: 1 },
+                { length: 1 },
+                { length: 1 },
+                { length: 1 },
+            ]
         }
     },
     methods: {
@@ -28,39 +40,58 @@ export default {
                     label: `Row ${rowIndex + 1}, Col ${colIndex + 1}`
                 })))
             console.log(this.grid)
+            this.PlaceAllShip()
         },
 
-        // CellAlert(rowIndex, colIndex) {
-        //     const cell = this.grid[rowIndex][colIndex]; // Recupera la cella
-        //     alert(`Label: ${cell.label}`)
-        // },
+        PlaceShip(ship) {
+            let set = false
 
-        PlaceShip(rowIndex, colIndex, i) {
-            const direction = Math.floor(Math.random() * 2)
+            while (!set) {
+                const direction = Math.floor(Math.random() * 2)
+                let startRow, startCol
+                if (direction === 0) {
+                    startRow = Math.floor(Math.random() * this.rows)
+                    startCol = Math.floor(Math.random() * (this.cols - ship.length + 1))
+                    let emptySpace = true
 
-            if (direction === 0) {
-                for (i = 0; i < 5; i++) {
-                    this.grid[i][0].isShip = true
+                    for (let i = 0; i < ship.length; i++) {
+                        if (this.grid[startRow][startCol + i].isShip) {
+                            emptySpace = false
+                            break
+                        }
+                    }
+                    if (emptySpace) {
+                        for (let i = 0; i < ship.length; i++) {
+                            this.grid[startRow][startCol + i].isShip = true
+                        }
+                        set = true
+                    }
+                } else {
+                    startRow = Math.floor(Math.random() * (this.rows - ship.length + 1))
+                    startCol = Math.floor(Math.random() * this.cols)
+                    let emptySpace = true
+
+                    for (let i = 0; i < ship.length; i++) {
+                        if (this.grid[startRow + i][startCol].isShip) {
+                            emptySpace = false
+                            break
+                        }
+                    }
+                    if (emptySpace) {
+                        for (let i = 0; i < ship.length; i++) {
+                            this.grid[startRow + i][startCol].isShip = true
+                        }
+                        set = true
+                    }
                 }
             }
-
-            // if (direction === 1 &&) {
-            //     for (i = 0; i < 5; i++) {
-            //         this.grid[i][colIndex].isShip = true
-            //     }
-            // }
-
-
-
-
-
-
-            // const cell = this.grid[rowIndex][colIndex]
-            // if (!cell.isShip) {
-            //     this.grid[rowIndex][colIndex].isShip = true
-            // } else {
-            //     alert('cella ocupata')
-            // }
+        },
+        PlaceAllShip() {
+            this.ships.forEach(ship => this.PlaceShip(ship))
+        },
+        fire(row, col) {
+            if (this.grid[row][col].isShip)
+                alert('hit')
         }
 
     },
