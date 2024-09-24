@@ -93,17 +93,26 @@ export default {
         },
 
         launchAttack(row, col) {
-            console.log('lunchAttack called')
-            if (this.grid[row][col].isShip && !this.grid[row][col].isActive) {
-                this.grid[row][col].isHit = true
-                this.grid[row][col].isActive = true
-                return true
-            } else if (!this.grid[row][col].isActive) {
-                this.grid[row][col].isActive = true
-                return false
+            console.log('launchAttack called');
+
+            // Controlla se la cella è già attiva (già attaccata)
+            if (this.grid[row][col].isActive) {
+                console.log('Cella già attaccata!');
+                return false; // Non puoi attaccare una cella già attiva
             }
-            return false
+
+            // Se la cella contiene una nave e non è attiva, segna come colpita
+            if (this.grid[row][col].isShip) {
+                this.grid[row][col].isHit = true;
+                this.grid[row][col].isActive = true;
+                return true; // Colpo a segno
+            }
+
+            // Se la cella non contiene una nave, segna solo come attiva
+            this.grid[row][col].isActive = true;
+            return false; // Nessuna nave colpita
         },
+
 
         handleGridActive(row, col) {
             if (this.grid[row][col].isHit) {
@@ -120,22 +129,50 @@ export default {
             this.autoAttack = true
         },
 
-        triggerAutoAttack() {
-            const randomRow = Math.floor(Math.random() * this.rows);
-            const randomCol = Math.floor(Math.random() * this.cols);
+        findAvailableCells() {
+            const availableCells = [];
 
-            const hit = this.launchAttack(randomRow, randomCol)
-            this.handleGridActive(randomRow, randomCol);
+            for (let row = 0; row < this.rows; row++) {
+                for (let col = 0; col < this.cols; col++) {
+                    if (!this.grid[row][col].isActive) {
+                        availableCells.push({ row, col });
+                    }
+                }
+            }
+            return availableCells
+        },
+
+        triggerAutoAttack() {
+            // Trova tutte le celle che non sono state attaccate
+            const availableCells = this.findAvailableCells()
+
+            // Se non ci sono più celle disponibili, ferma l'attacco automatico
+            if (availableCells.length === 0) {
+                console.log('Tutte le celle sono state attaccate, attacco automatico terminato.');
+                this.autoAttack = false;
+                return;
+            }
+
+            // Se ci sono celle disponibili, scegli una cella a caso tra quelle non attaccate
+            const randomIndex = Math.floor(Math.random() * availableCells.length);
+            const { row, col } = availableCells[randomIndex];
+
+            const hit = this.launchAttack(row, col);
+            this.handleGridActive(row, col);
+
+            // Se l'attacco è un successo (colpo a segno), continua l'attacco automatico
             if (hit) {
-                // Se è un colpo, continua ad attaccare
                 setTimeout(() => {
                     this.triggerAutoAttack();
-                }, 1000); // Aspetta un secondo prima di attaccare di nuovo
+                }, 1000); // Aspetta un secondo prima del prossimo attacco
             } else {
-                // Se è un colpo a vuoto, ferma l'attacco automatico
-                this.autoAttack = false;
+                // Altrimenti, ferma l'attacco automatico
+                setTimeout(() => {
+                    this.autoAttack = false;
+                }, 1000);
             }
         },
+
 
     },
 
