@@ -1,9 +1,9 @@
 <template>
-    <div class="grid">
+    <div class="grid" :class="{ 'is-disabled': gridDisabled }">
         <div v-for="(row, rowIndex) in grid" :key="rowIndex" class="row">
             <div v-for="(cell, colIndex) in row" :key="colIndex" class="cell"
                 :class="['cell', { [shipClass]: cell.isShip, 'hit': cell.isHit, 'miss': cell.isActive }]"
-                @click="launchAttack(rowIndex, colIndex)">
+                @click="handleClick(rowIndex, colIndex)">
                 <!-- cell content end logic -->
             </div>
         </div>
@@ -30,15 +30,22 @@ export default {
                 { length: 1 },
                 { length: 1 },
                 { length: 1 },
-            ]
+            ],
+            autoAttack: false,
+
         }
     },
 
     props: {
         shipClass: {
             type: String
+        },
+        gridDisabled: {
+            type: Boolean
         }
+
     },
+
     methods: {
         createGrid() {
             this.grid = Array.from({ length: this.rows }, (_, rowIndex) =>
@@ -90,14 +97,61 @@ export default {
             if (this.grid[row][col].isShip && !this.grid[row][col].isActive) {
                 this.grid[row][col].isHit = true
                 this.grid[row][col].isActive = true
+                return true
             } else if (!this.grid[row][col].isActive) {
                 this.grid[row][col].isActive = true
+                return false
             }
-        }
+            return false
+        },
+
+        handleGridActive(row, col) {
+            if (this.grid[row][col].isHit) {
+
+            }
+            if (!this.grid[row][col].isActive || !this.grid[row][col].isHit)
+                this.$emit('sentData')
+        },
+
+
+        handleClick(row, col) {
+            this.launchAttack(row, col)
+            this.handleGridActive(row, col)
+            this.autoAttack = true
+        },
+
+        triggerAutoAttack() {
+            const randomRow = Math.floor(Math.random() * this.rows);
+            const randomCol = Math.floor(Math.random() * this.cols);
+
+            const hit = this.launchAttack(randomRow, randomCol)
+            this.handleGridActive(randomRow, randomCol);
+            if (hit) {
+                // Se è un colpo, continua ad attaccare
+                setTimeout(() => {
+                    this.triggerAutoAttack();
+                }, 1000); // Aspetta un secondo prima di attaccare di nuovo
+            } else {
+                // Se è un colpo a vuoto, ferma l'attacco automatico
+                this.autoAttack = false;
+            }
+        },
+
     },
+
     created() {
         this.createGrid()
     },
+    watch: {
+        gridDisabled(newValue) {
+            setTimeout(() => {
+                if (!newValue && !this.autoAttack) {
+                    this.triggerAutoAttack();
+                    this.autoAttack = false; // Imposta il flag per attacco automatico
+                }
+            }, 1200)
+        }
+    }
 
 }
 </script>
@@ -133,5 +187,10 @@ export default {
 
 .miss {
     background-color: var(--light-gray);
+}
+
+.is-disabled {
+    pointer-events: none;
+    opacity: 0.5;
 }
 </style>
