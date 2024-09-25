@@ -1,5 +1,5 @@
 <template>
-    <div class="grid" :class="{ 'is-disabled': gridDisabled }">
+    <div class="grid" :class="{ 'is-disabled': gridDisabled, 'is-miss': disabledClick }">
         <div v-for="(row, rowIndex) in grid" :key="rowIndex" class="row">
             <div v-for="(cell, colIndex) in row" :key="colIndex" class="cell"
                 :class="['cell', { [shipClass]: cell.isShip, 'hit': cell.isHit, 'miss': cell.isActive }]"
@@ -20,18 +20,19 @@ export default {
             cols: 10,
             grid: [],
             ships: [
-                { length: 4 },
-                { length: 3 },
-                { length: 3 },
-                { length: 2 },
-                { length: 2 },
-                { length: 2 },
-                { length: 1 },
-                { length: 1 },
-                { length: 1 },
-                { length: 1 },
+                { id: 1, length: 4 },
+                { id: 2, length: 3 },
+                { id: 3, length: 3 },
+                { id: 4, length: 2 },
+                { id: 5, length: 2 },
+                { id: 6, length: 2 },
+                { id: 7, length: 1 },
+                { id: 8, length: 1 },
+                { id: 9, length: 1 },
+                { id: 10, length: 1 },
             ],
             autoAttack: false,
+            sunkedShipMessage: ''
 
         }
     },
@@ -42,6 +43,9 @@ export default {
         },
         gridDisabled: {
             type: Boolean
+        },
+        disabledClick: {
+            type: Boolean
         }
 
     },
@@ -50,9 +54,11 @@ export default {
         createGrid() {
             this.grid = Array.from({ length: this.rows }, (_, rowIndex) =>
                 Array.from({ length: this.cols }, (_, colIndex) => ({
+                    id: null,
                     isActive: false,
                     isShip: false,
                     isHit: false,
+                    isSunk: false,
                     label: `Row ${rowIndex + 1}, Col ${colIndex + 1}`
                 })))
             console.log(this.grid)
@@ -94,44 +100,48 @@ export default {
 
         launchAttack(row, col) {
             console.log('launchAttack called');
-
+            const cell = this.grid[row][col]
             // Controlla se la cella è già attiva (già attaccata)
-            if (this.grid[row][col].isActive) {
+            if (cell.isActive) {
                 console.log('Cella già attaccata!');
                 return false; // Non puoi attaccare una cella già attiva
             }
-
             // Se la cella contiene una nave e non è attiva, segna come colpita
-            if (this.grid[row][col].isShip) {
-                this.grid[row][col].isHit = true;
-                this.grid[row][col].isActive = true;
+            if (cell.isShip) {
+                cell.isHit = true;
+                cell.isActive = true;
+                console.log('Hai colpito:', cell.id)
                 return true; // Colpo a segno
             }
-
             // Se la cella non contiene una nave, segna solo come attiva
-            this.grid[row][col].isActive = true;
+            cell.isActive = true;
+            this.$emit('clickDisabled')
             return false; // Nessuna nave colpita
         },
 
 
         handleGridActive(row, col) {
-            if (this.grid[row][col].isHit) {
-
+            const cell = this.grid[row][col]
+            if (cell.isHit) {
+                return
             }
-            if (!this.grid[row][col].isActive || !this.grid[row][col].isHit)
+
+
+            if (!cell.isActive || !cell.isHit) {
                 this.$emit('sentData')
+            }
         },
 
 
         handleClick(row, col) {
             this.launchAttack(row, col)
             this.handleGridActive(row, col)
+            this.ships.forEach(ship => this.shipSunk(ship))
             this.autoAttack = true
         },
 
         findAvailableCells() {
             const availableCells = [];
-
             for (let row = 0; row < this.rows; row++) {
                 for (let col = 0; col < this.cols; col++) {
                     if (!this.grid[row][col].isActive) {
@@ -171,9 +181,29 @@ export default {
                     this.autoAttack = false;
                 }, 1000);
             }
+            this.$emit('clickDisabled')
         },
+        shipSunk(ship) {
+            // console.log('shipSunk called')
+            let hits = 0
+            const hitCells = []
+            for (let rowIndex = 0; rowIndex < this.grid.length; rowIndex++) {
+                for (let colIndex = 0; colIndex < this.grid[rowIndex].length; colIndex++) {
+                    const cell = this.grid[rowIndex][colIndex];
+                    if (cell.id === ship.id && cell.isHit === true) {
+                        hits++
+                        hitCells.push([rowIndex, colIndex])
+                        console.log(cell.id, 'was hits:', hits, 'times')
+                        console.log(hitCells)
 
-
+                        // console.log('hai colpito', cell.id)
+                        if (hits === ship.length) {
+                            console.log(cell.id, 'sunked')
+                        }
+                    }
+                }
+            }
+        }
     },
 
     created() {
@@ -224,10 +254,15 @@ export default {
 
 .miss {
     background-color: var(--light-gray);
+
 }
 
 .is-disabled {
     pointer-events: none;
     opacity: 0.5;
+}
+
+.is-miss {
+    pointer-events: none;
 }
 </style>

@@ -3,10 +3,12 @@
         <div class="container">
             <div class="row">
                 <div class="col">
-                    <GameGrid @sentData="disableGrid" :gridDisabled="gridDisabled" />
+                    <GameGrid @clickDisabled="clickDisabled" @sentData="disableGrid" shipClass="ship"
+                        :gridDisabled="gridDisabled" :disabledClick="disabledClick" />
                 </div>
                 <div class="col">
-                    <GameGrid @sentData="enableGrid" shipClass="ship" :gridDisabled="!gridDisabled" />
+                    <GameGrid class="pointer" @clickDisabled="clickEnabled" @sentData="enableGrid" shipClass="ship"
+                        :gridDisabled="!gridDisabled" />
                 </div>
             </div>
         </div>
@@ -24,6 +26,7 @@ export default {
     data() {
         return {
             gridDisabled: false,
+            disabledClick: false,
         }
     },
 
@@ -41,6 +44,14 @@ export default {
             }, 1000)
         },
 
+        clickDisabled() {
+            this.disabledClick = true
+        },
+
+        clickEnabled() {
+            this.disabledClick = false
+        }
+
     }
 }
 
@@ -57,5 +68,9 @@ export default {
 .row {
     display: flex;
     justify-content: space-between;
+}
+
+.pointer {
+    pointer-events: none;
 }
 </style>
