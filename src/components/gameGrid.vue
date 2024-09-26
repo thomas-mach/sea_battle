@@ -102,11 +102,10 @@ export default {
             console.log('launchAttack called');
             const cell = this.grid[row][col]
             // Controlla se la cella è già attiva (già attaccata)
-            if (cell.isActive) {
-                console.log('Cella già attaccata!');
-                return false; // Non puoi attaccare una cella già attiva
-            }
-            // Se la cella contiene una nave e non è attiva, segna come colpita
+            // if (cell.isActive) {
+            //     return false
+            //  }
+            // console.log('Cella già attaccata!');
             if (cell.isShip) {
                 cell.isHit = true;
                 cell.isActive = true;
@@ -117,6 +116,10 @@ export default {
             cell.isActive = true;
             this.$emit('clickDisabled')
             return false; // Nessuna nave colpita
+
+
+            // Se la cella contiene una nave e non è attiva, segna come colpita
+
         },
 
 
@@ -125,8 +128,6 @@ export default {
             if (cell.isHit) {
                 return
             }
-
-
             if (!cell.isActive || !cell.isHit) {
                 this.$emit('sentData')
             }
@@ -174,6 +175,7 @@ export default {
             if (hit) {
                 setTimeout(() => {
                     this.triggerAutoAttack();
+                    this.ships.forEach(ship => this.shipSunk(ship))
                 }, 1000); // Aspetta un secondo prima del prossimo attacco
             } else {
                 // Altrimenti, ferma l'attacco automatico
@@ -184,26 +186,71 @@ export default {
             this.$emit('clickDisabled')
         },
         shipSunk(ship) {
-            // console.log('shipSunk called')
-            let hits = 0
-            const hitCells = []
+            let hits = 0;
+            const hitCells = [];
+
             for (let rowIndex = 0; rowIndex < this.grid.length; rowIndex++) {
                 for (let colIndex = 0; colIndex < this.grid[rowIndex].length; colIndex++) {
                     const cell = this.grid[rowIndex][colIndex];
                     if (cell.id === ship.id && cell.isHit === true) {
-                        hits++
-                        hitCells.push([rowIndex, colIndex])
-                        console.log(cell.id, 'was hits:', hits, 'times')
-                        console.log(hitCells)
-
-                        // console.log('hai colpito', cell.id)
-                        if (hits === ship.length) {
-                            console.log(cell.id, 'sunked')
-                        }
+                        hits++;
+                        hitCells.push({ rowIndex, colIndex });
+                        console.log(cell.id, 'was hit:', hits, 'times');
                     }
                 }
             }
+
+            if (hits === ship.length) {
+                console.log('Ship sunk!');
+
+                // Segna tutte le celle colpite come "isSunk"
+                hitCells.forEach(hitCell => {
+                    this.grid[hitCell.rowIndex][hitCell.colIndex].isSunk = true;
+                });
+
+                const rowIndices = hitCells.map(el => el.rowIndex);
+                const isHorizontal = rowIndices.every(el => el === rowIndices[0]);
+                const colIndices = hitCells.map(el => el.colIndex);
+                const isVertical = colIndices.every(el => el === colIndices[0]);
+
+                if (isHorizontal) {
+                    console.log('Ship is horizontal');
+                    hitCells.forEach(hitCell => {
+                        this.activateSurroundingCells(hitCell.rowIndex, hitCell.colIndex);
+                    });
+                } else if (isVertical) {
+                    console.log('Ship is vertical');
+                    hitCells.forEach(hitCell => {
+                        this.activateSurroundingCells(hitCell.rowIndex, hitCell.colIndex);
+                    });
+                }
+            }
+        },
+
+        // Funzione per attivare le celle intorno a una specifica cella
+        activateSurroundingCells(rowIndex, colIndex) {
+            const surroundingOffsets = [
+                [-1, -1], [-1, 0], [-1, 1],  // celle sopra
+                [0, -1], [0, 1],   // celle ai lati
+                [1, -1], [1, 0], [1, 1]     // celle sotto
+            ];
+
+            surroundingOffsets.forEach(offset => {
+                const newRow = rowIndex + offset[0];
+                const newCol = colIndex + offset[1];
+
+                // Verifica se la nuova cella è all'interno dei limiti della griglia
+                if (this.isWithinGrid(newRow, newCol)) {
+                    this.grid[newRow][newCol].isActive = true;
+                }
+            });
+        },
+
+        // Funzione per verificare se una cella è all'interno della griglia
+        isWithinGrid(row, col) {
+            return row >= 0 && row < this.grid.length && col >= 0 && col < this.grid[0].length;
         }
+
     },
 
     created() {
@@ -250,10 +297,12 @@ export default {
 
 .hit {
     background-color: red !important;
+    pointer-events: none;
 }
 
 .miss {
     background-color: var(--light-gray);
+    pointer-events: none;
 
 }
 

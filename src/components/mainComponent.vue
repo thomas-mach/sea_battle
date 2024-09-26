@@ -3,7 +3,7 @@
         <div class="container">
             <div class="row">
                 <div class="col">
-                    <GameGrid @clickDisabled="clickDisabled" @sentData="disableGrid" shipClass="ship"
+                    <GameGrid @clickDisabled="clickDisabled" @sentData="disableGrid" shipClass=""
                         :gridDisabled="gridDisabled" :disabledClick="disabledClick" />
                 </div>
                 <div class="col">
