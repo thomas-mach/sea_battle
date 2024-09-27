@@ -31,8 +31,7 @@ export default {
     },
 
     methods: {
-        disableGrid(data) {
-            console.log(data)
+        disableGrid() {
             setTimeout(() => {
                 this.gridDisabled = true
             }, 1000)

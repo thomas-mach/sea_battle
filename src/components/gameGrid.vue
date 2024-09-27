@@ -7,6 +7,7 @@
                 <!-- cell content end logic -->
             </div>
         </div>
+        <!-- <h1>{{ AvailableCells }}</h1> -->
     </div>
 </template>
 
@@ -51,6 +52,13 @@ export default {
     },
 
     methods: {
+        handleClick(row, col) {
+            this.launchAttack(row, col)
+            this.handleGridActive(row, col)
+            this.ships.forEach(ship => this.shipSunk(ship))
+            this.autoAttack = true
+        },
+
         createGrid() {
             this.grid = Array.from({ length: this.rows }, (_, rowIndex) =>
                 Array.from({ length: this.cols }, (_, colIndex) => ({
@@ -101,25 +109,18 @@ export default {
         launchAttack(row, col) {
             console.log('launchAttack called');
             const cell = this.grid[row][col]
-            // Controlla se la cella è già attiva (già attaccata)
-            // if (cell.isActive) {
-            //     return false
-            //  }
-            // console.log('Cella già attaccata!');
+
             if (cell.isShip) {
                 cell.isHit = true;
-                cell.isActive = true;
+                cell.isActive = true
                 console.log('Hai colpito:', cell.id)
                 return true; // Colpo a segno
             }
-            // Se la cella non contiene una nave, segna solo come attiva
-            cell.isActive = true;
+
+            cell.isActive = true
             this.$emit('clickDisabled')
+
             return false; // Nessuna nave colpita
-
-
-            // Se la cella contiene una nave e non è attiva, segna come colpita
-
         },
 
 
@@ -134,42 +135,25 @@ export default {
         },
 
 
-        handleClick(row, col) {
-            this.launchAttack(row, col)
-            this.handleGridActive(row, col)
-            this.ships.forEach(ship => this.shipSunk(ship))
-            this.autoAttack = true
-        },
 
         findAvailableCells() {
-            const availableCells = [];
-            for (let row = 0; row < this.rows; row++) {
-                for (let col = 0; col < this.cols; col++) {
-                    if (!this.grid[row][col].isActive) {
-                        availableCells.push({ row, col });
-                    }
+            const availableCells = this.grid
+            let randomRowIndex, randomColIndex;
+            let foundNonActiveCell = false;
+            do {
+                randomRowIndex = Math.floor(Math.random() * availableCells.length);
+                randomColIndex = Math.floor(Math.random() * availableCells[randomRowIndex].length);
+                if (!availableCells[randomRowIndex][randomColIndex].isActive) {
+                    foundNonActiveCell = true;
                 }
-            }
-            return availableCells
+            } while (!foundNonActiveCell)
+            return { randomRowIndex, randomColIndex }
         },
 
         triggerAutoAttack() {
-            // Trova tutte le celle che non sono state attaccate
-            const availableCells = this.findAvailableCells()
-
-            // Se non ci sono più celle disponibili, ferma l'attacco automatico
-            if (availableCells.length === 0) {
-                console.log('Tutte le celle sono state attaccate, attacco automatico terminato.');
-                this.autoAttack = false;
-                return;
-            }
-
-            // Se ci sono celle disponibili, scegli una cella a caso tra quelle non attaccate
-            const randomIndex = Math.floor(Math.random() * availableCells.length);
-            const { row, col } = availableCells[randomIndex];
-
-            const hit = this.launchAttack(row, col);
-            this.handleGridActive(row, col);
+            const { randomRowIndex, randomColIndex } = this.findAvailableCells()
+            const hit = this.launchAttack(randomRowIndex, randomColIndex);
+            this.handleGridActive(randomRowIndex, randomColIndex);
 
             // Se l'attacco è un successo (colpo a segno), continua l'attacco automatico
             if (hit) {
@@ -256,6 +240,7 @@ export default {
     created() {
         this.createGrid()
     },
+
     watch: {
         gridDisabled(newValue) {
             setTimeout(() => {
@@ -264,9 +249,9 @@ export default {
                     this.autoAttack = false; // Imposta il flag per attacco automatico
                 }
             }, 1200)
-        }
-    }
+        },
 
+    },
 }
 </script>
 
