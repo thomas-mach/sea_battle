@@ -20,6 +20,7 @@ export default {
             rows: 10,
             cols: 10,
             grid: [],
+            hitShip: [],
             ships: [
                 { id: 1, length: 4 },
                 { id: 2, length: 3 },
@@ -39,23 +40,16 @@ export default {
     },
 
     props: {
-        shipClass: {
-            type: String
-        },
-        gridDisabled: {
-            type: Boolean
-        },
-        disabledClick: {
-            type: Boolean
-        }
-
+        shipClass: String,
+        gridDisabled: Boolean,
+        disabledClick: Boolean
     },
 
     methods: {
         handleClick(row, col) {
             this.launchAttack(row, col)
-            this.handleGridActive(row, col)
             this.ships.forEach(ship => this.shipSunk(ship))
+            this.handleGridActive(row, col)
             this.autoAttack = true
         },
 
@@ -150,25 +144,118 @@ export default {
             return { randomRowIndex, randomColIndex }
         },
 
-        triggerAutoAttack() {
-            const { randomRowIndex, randomColIndex } = this.findAvailableCells()
-            const hit = this.launchAttack(randomRowIndex, randomColIndex);
-            this.handleGridActive(randomRowIndex, randomColIndex);
+        tryToSunk(row, col) {
 
-            // Se l'attacco è un successo (colpo a segno), continua l'attacco automatico
-            if (hit) {
-                setTimeout(() => {
-                    this.triggerAutoAttack();
-                    this.ships.forEach(ship => this.shipSunk(ship))
-                }, 1000); // Aspetta un secondo prima del prossimo attacco
-            } else {
-                // Altrimenti, ferma l'attacco automatico
-                setTimeout(() => {
-                    this.autoAttack = false;
-                }, 1000);
+
+            console.log('tryToSunk called');
+            console.log(row, col)
+
+            if (this.isWithinGrid(row - 1, col) && !this.grid[row - 1][col].isActive) {
+
+                console.log(row - 1, col);
+                return {
+                    row: row - 1,
+                    col: col
+                };
             }
-            this.$emit('clickDisabled')
+            if (this.isWithinGrid(row + 1, col) && !this.grid[row + 1][col].isActive) {
+
+                console.log(row + 1, col);
+                return {
+                    row: row + 1,
+                    col: col
+                };
+            }
+            if (this.isWithinGrid(row, col - 1) && !this.grid[row][col - 1].isActive) {
+
+                console.log(row, col - 1);
+                return {
+                    row: row,
+                    col: col - 1
+                };
+            }
+            if (this.isWithinGrid(row, col + 1) && !this.grid[row][col + 1].isActive) {
+
+                console.log(row, col + 1);
+                return {
+                    row: row,
+                    col: col + 1
+                };
+            } else {
+                this.triggerAutoAttack();
+            }
         },
+
+        triggerAutoAttack() {
+            if (this.hitShip.length === 0) {
+                const { randomRowIndex, randomColIndex } = this.findAvailableCells()
+                const hit = this.launchAttack(randomRowIndex, randomColIndex)
+
+
+
+                this.handleGridActive(randomRowIndex, randomColIndex);
+
+
+                if (hit) {
+
+                    this.ships.forEach(ship => {
+                        const isShipSunk = this.shipSunk(ship); // Verifica se la nave è affondata.
+
+                        if (isShipSunk) {
+                            console.log(`Ship with ID ${ship.id} has sunk.`);
+                            this.hitShip = [];  // Azzera l'array delle celle colpite per quella nave.
+                        }
+
+                    });
+                    this.hitShip.push({ row: randomRowIndex, col: randomColIndex })
+                    console.log('hitShipArray', this.hitShip)
+                    // Se l'attacco ha colpito una nave, prova a colpirne altre parti
+                    setTimeout(() => {
+                        this.autoAttackNextHit(randomRowIndex, randomColIndex);
+
+
+                    }, 400);
+                } else {
+                    // Se l'attacco è fallito, ferma l'attacco automatico
+                    setTimeout(() => {
+                        this.autoAttack = false;
+                    }, 400);
+                }
+                this.$emit('clickDisabled');
+            } else if (this.hitShip.length === 1) {
+                console.log(this.hitShip)
+                this.autoAttackNextHit(this.hitShip[0].row, this.hitShip[0].col)
+
+            }
+        },
+
+        autoAttackNextHit(row, col) {
+            this.ships.forEach(ship => this.shipSunk(ship))
+
+            const result = this.tryToSunk(row, col);
+
+
+            if (result) {
+                const hit2 = this.launchAttack(result.row, result.col);
+                this.handleGridActive(result.row, result.col);
+
+                // Se il secondo attacco è un colpo a segno, continua con un altro attacco
+                if (hit2) {
+                    setTimeout(() => {
+                        this.hitShip.push({ row: result.row, col: result.col })
+                        console.log(this.hitShip)
+                        this.autoAttackNextHit(result.row, result.col);
+                    }, 400);
+                } else {
+                    // Altrimenti, ferma l'attacco automatico
+                    setTimeout(() => {
+                        this.autoAttack = false;
+
+                    }, 400);
+                }
+            }
+        },
+
         shipSunk(ship) {
             let hits = 0;
             const hitCells = [];
@@ -208,6 +295,7 @@ export default {
                         this.activateSurroundingCells(hitCell.rowIndex, hitCell.colIndex);
                     });
                 }
+                return true
             }
         },
 
@@ -248,7 +336,7 @@ export default {
                     this.triggerAutoAttack();
                     this.autoAttack = false; // Imposta il flag per attacco automatico
                 }
-            }, 1200)
+            }, 500)
         },
 
     },
