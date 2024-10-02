@@ -12,12 +12,12 @@
 <script>
 import { placeShip } from "./utils/place-ship.js";
 export default {
+    name: 'Game',
     data() {
         return {
             rows: 10,
             cols: 10,
             grid: [],
-            hitShip: [],
             ships: [
                 { id: 1, length: 4 },
                 { id: 2, length: 3 },
@@ -31,15 +31,19 @@ export default {
                 { id: 10, length: 1 },
             ],
             autoAttack: false,
-            sunkedShipMessage: ''
-
+            wasHit: false,
+            hitsTracker: [],
+            idsOfSunkShips: [],
+            priority: 1,
+            clickEnabled: false, // Flag per abilitare/disabilitare il click
         };
     },
 
     props: {
         shipClass: String,
         gridDisabled: Boolean,
-        disabledClick: Boolean
+        disabledClick: Boolean,
+        start: Function,
     },
 
     methods: {
@@ -59,6 +63,7 @@ export default {
                     isShip: false,
                     isHit: false,
                     isSunk: false,
+                    priority: 1,
                     label: `Row ${rowIndex + 1}, Col ${colIndex + 1}`
                 })));
 
@@ -100,40 +105,90 @@ export default {
             const availableCells = this.grid;
             let randomRowIndex, randomColIndex;
             let foundNonActiveCell = false;
-            do {
-                randomRowIndex = Math.floor(Math.random() * availableCells.length);
-                randomColIndex = Math.floor(Math.random() * availableCells[randomRowIndex].length);
-                if (!availableCells[randomRowIndex][randomColIndex].isActive) {
-                    foundNonActiveCell = true;
-                }
-            } while (!foundNonActiveCell);
 
-            return { randomRowIndex, randomColIndex };
+            // Se è stata colpita una cella, cerca celle con la priorità più alta
+            if (this.wasHit) {
+                do {
+                    randomRowIndex = Math.floor(Math.random() * availableCells.length);
+                    randomColIndex = Math.floor(Math.random() * availableCells[randomRowIndex].length);
+                    if (!availableCells[randomRowIndex][randomColIndex].isActive && availableCells[randomRowIndex][randomColIndex].priority === this.priority) {
+                        foundNonActiveCell = true;
+                    }
+                } while (!foundNonActiveCell);
+
+                return { randomRowIndex, randomColIndex };
+                // Se non è stata colpita una cella, cerca una qualsiasi cella non attiva
+            } else {
+                do {
+                    randomRowIndex = Math.floor(Math.random() * availableCells.length);
+                    randomColIndex = Math.floor(Math.random() * availableCells[randomRowIndex].length);
+                    if (!availableCells[randomRowIndex][randomColIndex].isActive) {
+                        foundNonActiveCell = true;
+                    }
+                } while (!foundNonActiveCell);
+
+                return { randomRowIndex, randomColIndex };
+            }
+
+
+        },
+
+        checkAllShipsHit() {
+            // Controlla se ci sono ancora navi colpite ma non affondate
+            let anyShipHit = false;
+
+            this.ships.forEach(ship => {
+                let hits = 0;
+                for (let rowIndex = 0; rowIndex < this.grid.length; rowIndex++) {
+                    for (let colIndex = 0; colIndex < this.grid[rowIndex].length; colIndex++) {
+                        const cell = this.grid[rowIndex][colIndex];
+                        if (cell.id === ship.id && cell.isHit && !cell.isSunk) {
+                            hits++;
+                        }
+                    }
+                }
+                // Se ci sono colpi su una nave che non è stata ancora affondata, segnala che esiste una nave colpita
+                if (hits > 0 && hits < ship.length) {
+                    anyShipHit = true;
+                }
+            });
+
+            // Imposta wasHit a false solo se nessuna nave colpita è in gioco
+            if (!anyShipHit) {
+                this.wasHit = false;
+                this.hitsTracker = [];
+            }
         },
 
         triggerAutoAttack() {
+            //lancia attaco per CPU
+            let hit = false;
             const { randomRowIndex, randomColIndex } = this.findAvailableCells();
-            const hit = this.launchAttack(randomRowIndex, randomColIndex);
+            hit = this.launchAttack(randomRowIndex, randomColIndex);
             this.handleGridActive(randomRowIndex, randomColIndex);
 
             // Se l'attacco è un successo (colpo a segno), continua l'attacco automatico
             if (hit) {
                 setTimeout(() => {
-                    this.hitShip.push({ row: randomRowIndex, col: randomColIndex, id: this.grid[randomRowIndex][randomColIndex].id });
-                    console.log('hitShipArray:', this.hitShip);
+                    this.wasHit = true
+                    const restOfShips = this.ships.filter(el => !this.idsOfSunkShips.includes(el.id)) //filtra le navi colpite
+                    restOfShips.forEach(ship => this.shipSunk(ship));
+                    this.addPriority(randomRowIndex, randomColIndex);
+                    this.checkAllShipsHit(); // Controlla se ci sono ancora navi colpite ma non affondate
+                    console.log('AUTO ATTACK:', this.grid)
                     this.triggerAutoAttack();
-                    this.ships.forEach(ship => this.shipSunk(ship));
-                }, 1000); // Aspetta un secondo prima del prossimo attacco
+                }, 700);
             } else {
-                // Altrimenti, ferma l'attacco automatico
                 setTimeout(() => {
-                    this.autoAttack = false;
-                }, 1000);
+                    this.autoAttack = false; //Ferma l'attacco automatico
+                }, 700);
             }
+
             this.$emit('clickDisabled');
         },
 
         shipSunk(ship) {
+            console.log('shipSunk called')
             let hits = 0;
             const hitCells = [];
 
@@ -143,7 +198,6 @@ export default {
                     if (cell.id === ship.id && cell.isHit === true) {
                         hits++;
                         hitCells.push({ rowIndex, colIndex });
-                        console.log(cell.id, 'was hit:', hits, 'times');
                     }
                 }
             }
@@ -155,23 +209,24 @@ export default {
                 hitCells.forEach(hitCell => {
                     this.grid[hitCell.rowIndex][hitCell.colIndex].isSunk = true;
                 });
-
+                this.idsOfSunkShips.push(this.grid[hitCells[0].rowIndex][hitCells[0].colIndex].id)
                 const rowIndices = hitCells.map(el => el.rowIndex);
                 const isHorizontal = rowIndices.every(el => el === rowIndices[0]);
                 const colIndices = hitCells.map(el => el.colIndex);
                 const isVertical = colIndices.every(el => el === colIndices[0]);
 
                 if (isHorizontal) {
-                    console.log('Ship is horizontal');
+                    // console.log('Ship is horizontal');
                     hitCells.forEach(hitCell => {
                         this.activateSurroundingCells(hitCell.rowIndex, hitCell.colIndex);
                     });
                 } else if (isVertical) {
-                    console.log('Ship is vertical');
+                    // console.log('Ship is vertical');
                     hitCells.forEach(hitCell => {
                         this.activateSurroundingCells(hitCell.rowIndex, hitCell.colIndex);
                     });
                 }
+
             }
         },
 
@@ -190,15 +245,51 @@ export default {
                 // Verifica se la nuova cella è all'interno dei limiti della griglia
                 if (this.isWithinGrid(newRow, newCol)) {
                     this.grid[newRow][newCol].isActive = true;
+
                 }
             });
         },
 
-        // Funzione per verificare se una cella è all'interno della griglia
+        // Assegna la priorità più alta alle celle circostanti la cella colpita
+        addPriority(rowIndex, colIndex) {
+            this.hitsTracker.push({ rowIndex, colIndex });
+            console.log('hitTrucker', this.hitsTracker);
+            this.priority = 2
+
+            let surroundingOffsets = [[-1, 0], [0, -1], [1, 0], [0, 1]]
+
+            if (this.hitsTracker.length > 1) {
+                const rowIndices = this.hitsTracker.map(el => el.rowIndex);
+                const isHorizontal = rowIndices.every(el => el === rowIndices[0]);
+                const colIndices = this.hitsTracker.map(el => el.colIndex);
+                const isVertical = colIndices.every(el => el === colIndices[0]);
+
+                if (isHorizontal) {
+                    console.log('Ship is horizontal');
+                    this.priority = 3
+                    surroundingOffsets = [[0, -1], [0, 1], [0, -2], [0, 2]]
+                } else if (isVertical) {
+                    console.log('Ship is vertical');
+                    this.priority = 3
+                    surroundingOffsets = [[-1, 0], [1, 0], [-2, 0], [2, 0]]
+
+                }
+            }
+
+            surroundingOffsets.forEach(offset => {
+                const newRow = rowIndex + offset[0];
+                const newCol = colIndex + offset[1];
+
+                if (this.isWithinGrid(newRow, newCol)) {
+                    this.grid[newRow][newCol].priority = this.priority;
+                }
+            });
+        },
+
+        //Verifica se una cella è all'interno della griglia
         isWithinGrid(row, col) {
             return row >= 0 && row < this.grid.length && col >= 0 && col < this.grid[0].length;
-        }
-
+        },
     },
 
     created() {
@@ -212,8 +303,18 @@ export default {
                     this.triggerAutoAttack();
                     this.autoAttack = false; // Imposta il flag per attacco automatico
                 }
-            }, 1200);
+            }, 800);
         },
+        priority(newValue) {
+            console.log('PRIORITY CHANGED:', newValue);
+        },
+
+        // grid: {
+        //     handler(newGrid) {
+        //         console.log('La griglia è cambiata:', newGrid);
+        //     },
+        //     deep: true, // Abilita l'osservazione profonda (deep) per tracciare cambiamenti annidati
+        // },
 
     },
 };

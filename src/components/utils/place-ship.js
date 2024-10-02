@@ -1,4 +1,4 @@
-import { surroundingCell } from './sourrounding-cell'; // Importa surroundingCell dal suo file
+import { surroundingCell } from './sourrounding-cell'; // Importa surroundingCell
 
 export function placeShip(grid, ship, rows, cols) {
     let set = false;
