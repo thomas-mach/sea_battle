@@ -444,4 +444,15 @@ export default {
     background-position: center;
     background-repeat: no-repeat;
 }
+
+@media (max-width: 768px) {
+    .grid {
+        width: 350px;
+    }
+
+    .cell {
+        width: 35px;
+        height: 35px;
+    }
+}
 </style>
