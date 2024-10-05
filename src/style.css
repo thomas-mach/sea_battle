@@ -40,8 +40,13 @@ body {
 }
 
 @media (hover: none) and (pointer: coarse) {
-  button:hover {
+  button {
     background-color: transparent;
     color: var(--dark-blue);
+  }
+
+  button:active {
+    background-color: var(--dark-blue);
+    color: var(--light-blue);
   }
 }
