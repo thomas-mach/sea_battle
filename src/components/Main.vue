@@ -57,7 +57,6 @@ export default {
             isGameOver: false,
             gameOverMessage: '',
             clickSound: new Audio('./mp3/battery.mp3'),
-            isSmallScreen: false,
         }
     },
 
@@ -96,7 +95,7 @@ export default {
         soundDisable() {
             this.clickSound.play();
             this.switch = !this.switch
-            if (this.switch) {
+            if (!this.switch) {
                 this.buttonSound = ['fas', 'volume-xmark']
             } else {
                 this.buttonSound = ['fas', 'volume-low']

@@ -13,6 +13,13 @@
 import { placeShip } from "./utils/place-ship.js";
 export default {
     name: 'Game',
+
+    props: {
+        shipClass: String,
+        gridDisabled: Boolean,
+        disabledClick: Boolean,
+    },
+
     data() {
         return {
             rows: 10,
@@ -36,16 +43,27 @@ export default {
             idsOfSunkShips: [],
             priority: 1,
             gameOver: false,
+            soundEnabled: true,
             bigFireBall: new Audio('./mp3/big_fireball.mp3'),
             impact: new Audio('./mp3/impact.mp3'),
-            soundEnabled: true,
         };
     },
 
-    props: {
-        shipClass: String,
-        gridDisabled: Boolean,
-        disabledClick: Boolean,
+    watch: {
+        gridDisabled(newValue) {
+
+            setTimeout(() => {
+                if (!newValue && !this.autoAttack && !this.gameOver) {
+                    this.triggerAutoAttack();
+                    this.autoAttack = false; // Imposta il flag per attacco automatico
+                }
+            }, 1000);
+
+        },
+    },
+
+    created() {
+        this.gridInitial();
     },
 
     methods: {
@@ -55,11 +73,8 @@ export default {
         },
 
         createGrid() {
-            console.log('createGrid called')
             this.gameOver = false
-            console.log('Game Over da create grid', this.gameOver)
             this.idsOfSunkShips = []
-            // Inizializza la griglia come un array bidimensionale di celle vuote
             this.grid = Array.from({ length: this.rows }, (_, rowIndex) =>
                 Array.from({ length: this.cols }, (_, colIndex) => ({
                     id: null,
@@ -75,7 +90,7 @@ export default {
 
             // Posiziona tutte le navi sulla griglia
             this.ships.forEach(ship => placeShip(this.grid, ship, this.rows, this.cols));
-            console.log(this.grid);
+            // console.log(this.grid);
         },
 
         handleClick(row, col) {
@@ -88,17 +103,6 @@ export default {
             setTimeout(() => {
                 this.endGame()
             }, 2000)
-        },
-
-        disabledSound() {
-            this.soundEnabled = !this.soundEnabled
-        },
-
-        playSound(sound) {
-            if (this.soundEnabled) {
-                sound.currentTime = 0;
-                sound.play()
-            }
         },
 
         launchAttack(row, col) {
@@ -325,7 +329,6 @@ export default {
             });
         },
 
-        //Verifica se una cella è all'interno della griglia
         isWithinGrid(row, col) {
             return row >= 0 && row < this.grid.length && col >= 0 && col < this.grid[0].length;
         },
@@ -333,10 +336,10 @@ export default {
         endGame(player) {
             const restOfShips = this.ships.filter(el => this.idsOfSunkShips.includes(el.id)); // Filtra le navi affondate
             console.log('sunked ship ids length', restOfShips.length);
-            if (restOfShips.length === 1 && !this.gameOver) {  // Assicurati che `gameOver` non sia già true
+            if (restOfShips.length === 1 && !this.gameOver) {
                 this.gameOver = true;
-                this.autoAttack = false; // Ferma l'attacco automatico
-                this.$emit('gameOver', player); // Emetti l'evento gameOver
+                this.autoAttack = false;
+                this.$emit('gameOver', player);
             }
         },
 
@@ -365,30 +368,19 @@ export default {
                 cell.forEach(el => this.grid[el.row][el.col].isOnTarget = false)
                 this.grid[i][j].isTarget = false
             }, 1000)
-        }
-    },
-
-    created() {
-        this.gridInitial();
-    },
-
-    watch: {
-        gridDisabled(newValue) {
-
-            setTimeout(() => {
-                if (!newValue && !this.autoAttack && !this.gameOver) {
-                    this.triggerAutoAttack();
-                    this.autoAttack = false; // Imposta il flag per attacco automatico
-                }
-            }, 1000);
-
         },
-        priority(newValue) {
-            console.log('PRIORITY CHANGED:', newValue);
+
+        disabledSound() {
+            this.soundEnabled = !this.soundEnabled
         },
-        gameOver(newValue) {
-            console.log('GAME OVER CHANGED:', newValue)
-        }
+
+        playSound(sound) {
+            console.log('play sound colled')
+            if (this.soundEnabled) {
+                sound.currentTime = 0;
+                sound.play()
+            }
+        },
     },
 };
 </script>
@@ -400,7 +392,6 @@ export default {
     width: 500px;
     aspect-ratio: 1;
     border: 1px solid var(--light-blue);
-
 }
 
 .row {
@@ -437,7 +428,6 @@ export default {
 
 .is-disabled {
     pointer-events: none;
-    /* opacity: 0.5; */
 }
 
 .is-miss {
@@ -454,7 +444,4 @@ export default {
     background-position: center;
     background-repeat: no-repeat;
 }
-
-
-@media (max-width: 768px) {}
 </style>
