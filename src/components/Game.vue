@@ -2,7 +2,7 @@
     <div class="grid" :class="{ 'is-disabled': gridDisabled, 'is-miss': disabledClick }">
         <div v-for="(row, rowIndex) in grid" :key="rowIndex" class="row">
             <div v-for="(cell, colIndex) in row" :key="colIndex" class="cell"
-                :class="['cell', { [shipClass]: cell.isShip, 'hit': cell.isHit, 'miss': cell.isActive }]"
+                :class="['cell', { [shipClass]: cell.isShip, 'hit': cell.isHit, 'miss': cell.isActive, 'on-target': cell.isOnTarget, 'target': cell.isTarget }]"
                 @click="handleClick(rowIndex, colIndex)">
             </div>
         </div>
@@ -35,7 +35,10 @@ export default {
             hitsTracker: [],
             idsOfSunkShips: [],
             priority: 1,
-            clickEnabled: false, // Flag per abilitare/disabilitare il click
+            gameOver: false,
+            bigFireBall: new Audio('./mp3/big_fireball.mp3'),
+            impact: new Audio('./mp3/impact.mp3'),
+            soundEnabled: true,
         };
     },
 
@@ -43,18 +46,19 @@ export default {
         shipClass: String,
         gridDisabled: Boolean,
         disabledClick: Boolean,
-        start: Function,
     },
 
     methods: {
-        handleClick(row, col) {
-            this.launchAttack(row, col);
-            this.handleGridActive(row, col);
-            this.ships.forEach(ship => this.shipSunk(ship));
-            this.autoAttack = true;
+        gridInitial() {
+            this.grid = Array.from({ length: this.rows }, (_, rowIndex) =>
+                Array.from({ length: this.cols }, (_, colIndex) => false));
         },
 
         createGrid() {
+            console.log('createGrid called')
+            this.gameOver = false
+            console.log('Game Over da create grid', this.gameOver)
+            this.idsOfSunkShips = []
             // Inizializza la griglia come un array bidimensionale di celle vuote
             this.grid = Array.from({ length: this.rows }, (_, rowIndex) =>
                 Array.from({ length: this.cols }, (_, colIndex) => ({
@@ -63,6 +67,8 @@ export default {
                     isShip: false,
                     isHit: false,
                     isSunk: false,
+                    isOnTarget: false,
+                    isTarget: false,
                     priority: 1,
                     label: `Row ${rowIndex + 1}, Col ${colIndex + 1}`
                 })));
@@ -72,28 +78,88 @@ export default {
             console.log(this.grid);
         },
 
+        handleClick(row, col) {
+            this.launchAttack(row, col);
+            this.handleGridActive(row, col);
+            setTimeout(() => {
+                this.ships.forEach(ship => this.shipSunk(ship));
+                this.autoAttack = true;
+            }, 1000)
+            setTimeout(() => {
+                this.endGame()
+            }, 2000)
+        },
+
+        disabledSound() {
+            this.soundEnabled = !this.soundEnabled
+        },
+
+        playSound(sound) {
+            if (this.soundEnabled) {
+                sound.currentTime = 0;
+                sound.play()
+            }
+        },
+
         launchAttack(row, col) {
             console.log('launchAttack called');
             const cell = this.grid[row][col];
+            this.onTarget(this.grid, row, col);
 
             if (cell.isShip) {
                 cell.isHit = true;
                 cell.isActive = true;
                 console.log('Hai colpito:', cell.id);
-
+                setTimeout(() => {
+                    this.playSound(this.bigFireBall)
+                }, 1000)
                 return true; // Colpo a segno
             }
 
             cell.isActive = true;
             this.$emit('clickDisabled');
-
+            setTimeout(() => {
+                this.playSound(this.impact)
+            }, 1000)
             return false; // Nessuna nave colpita
+        },
+
+        triggerAutoAttack() {
+            console.log('AutoAttack called', this.gameOver)
+            if (this.gameOver) {
+                return;
+            }
+            //lancia attaco per CPU
+            let hit = false;
+            const { randomRowIndex, randomColIndex } = this.findAvailableCells();
+            hit = this.launchAttack(randomRowIndex, randomColIndex);
+            console.log('lunch attack from triggerautoattack', hit)
+            this.handleGridActive(randomRowIndex, randomColIndex);
+
+            // Se l'attacco è un successo (colpo a segno), continua l'attacco automatico
+            if (hit) {
+                setTimeout(() => {
+                    this.wasHit = true
+                    const restOfShips = this.ships.filter(el => !this.idsOfSunkShips.includes(el.id)) //filtra le navi colpite
+                    restOfShips.forEach(ship => this.shipSunk(ship));
+                    this.endGame()
+                    this.addPriority(randomRowIndex, randomColIndex);
+                    this.checkAllShipsHit(); // Controlla se ci sono ancora navi colpite ma non affondate
+                    console.log('AUTO ATTACK:', this.grid)
+                    this.triggerAutoAttack();
+                }, 2000);
+            } else {
+                setTimeout(() => {
+                    this.autoAttack = false; //Ferma l'attacco automatico
+                }, 1000);
+            }
+
+            this.$emit('clickDisabled');
         },
 
         handleGridActive(row, col) {
             const cell = this.grid[row][col];
             if (cell.isHit) {
-
                 return;
             }
             if (!cell.isActive || !cell.isHit) {
@@ -158,33 +224,6 @@ export default {
                 this.wasHit = false;
                 this.hitsTracker = [];
             }
-        },
-
-        triggerAutoAttack() {
-            //lancia attaco per CPU
-            let hit = false;
-            const { randomRowIndex, randomColIndex } = this.findAvailableCells();
-            hit = this.launchAttack(randomRowIndex, randomColIndex);
-            this.handleGridActive(randomRowIndex, randomColIndex);
-
-            // Se l'attacco è un successo (colpo a segno), continua l'attacco automatico
-            if (hit) {
-                setTimeout(() => {
-                    this.wasHit = true
-                    const restOfShips = this.ships.filter(el => !this.idsOfSunkShips.includes(el.id)) //filtra le navi colpite
-                    restOfShips.forEach(ship => this.shipSunk(ship));
-                    this.addPriority(randomRowIndex, randomColIndex);
-                    this.checkAllShipsHit(); // Controlla se ci sono ancora navi colpite ma non affondate
-                    console.log('AUTO ATTACK:', this.grid)
-                    this.triggerAutoAttack();
-                }, 700);
-            } else {
-                setTimeout(() => {
-                    this.autoAttack = false; //Ferma l'attacco automatico
-                }, 700);
-            }
-
-            this.$emit('clickDisabled');
         },
 
         shipSunk(ship) {
@@ -290,32 +329,66 @@ export default {
         isWithinGrid(row, col) {
             return row >= 0 && row < this.grid.length && col >= 0 && col < this.grid[0].length;
         },
+
+        endGame(player) {
+            const restOfShips = this.ships.filter(el => this.idsOfSunkShips.includes(el.id)); // Filtra le navi affondate
+            console.log('sunked ship ids length', restOfShips.length);
+            if (restOfShips.length === 1 && !this.gameOver) {  // Assicurati che `gameOver` non sia già true
+                this.gameOver = true;
+                this.autoAttack = false; // Ferma l'attacco automatico
+                this.$emit('gameOver', player); // Emetti l'evento gameOver
+            }
+        },
+
+        onTarget(matrix, i, j) {
+            const cell = []
+            // Celle sopra
+            for (let row = i - 1; row >= 0; row--) {
+                cell.push({ row: row, col: j });
+            }
+            // Celle sotto
+            for (let row = i + 1; row < matrix.length; row++) {
+                cell.push({ row: row, col: j });
+            }
+            // Celle a sinistra
+            for (let col = j - 1; col >= 0; col--) {
+                cell.push({ row: i, col: col });
+            }
+            // Celle a destra
+            for (let col = j + 1; col < matrix[0].length; col++) {
+                cell.push({ row: i, col: col });
+            }
+            this.grid[i][j].isTarget = true
+
+            cell.forEach(el => this.grid[el.row][el.col].isOnTarget = true)
+            setTimeout(() => {
+                cell.forEach(el => this.grid[el.row][el.col].isOnTarget = false)
+                this.grid[i][j].isTarget = false
+            }, 1000)
+        }
     },
 
     created() {
-        this.createGrid();
+        this.gridInitial();
     },
 
     watch: {
         gridDisabled(newValue) {
+
             setTimeout(() => {
-                if (!newValue && !this.autoAttack) {
+                if (!newValue && !this.autoAttack && !this.gameOver) {
                     this.triggerAutoAttack();
                     this.autoAttack = false; // Imposta il flag per attacco automatico
                 }
-            }, 800);
+            }, 1000);
+
         },
         priority(newValue) {
             console.log('PRIORITY CHANGED:', newValue);
         },
-
-        // grid: {
-        //     handler(newGrid) {
-        //         console.log('La griglia è cambiata:', newGrid);
-        //     },
-        //     deep: true, // Abilita l'osservazione profonda (deep) per tracciare cambiamenti annidati
-        // },
-
+        gameOver(newValue) {
+            console.log('GAME OVER CHANGED:', newValue)
+        }
     },
 };
 </script>
@@ -336,6 +409,7 @@ export default {
 
 .cell {
     background-color: var(--medium-blue);
+    background-color: var(--medium-blue);
     border: 1px solid var(--light-blue);
     width: 50px;
     height: 50px;
@@ -346,22 +420,41 @@ export default {
 }
 
 .hit {
-    background-color: red !important;
+    background-color: var(--deep-blue) !important;
+    background-image: var(--icon-cross-red) !important;
+    background-position: center;
+    background-repeat: no-repeat;
     pointer-events: none;
 }
 
 .miss {
-    background-color: var(--light-gray);
+    background-color: var(--dark-blue);
+    background-image: var(--icon-cross);
+    background-position: center;
+    background-repeat: no-repeat;
     pointer-events: none;
-
 }
 
 .is-disabled {
     pointer-events: none;
-    opacity: 0.5;
+    /* opacity: 0.5; */
 }
 
 .is-miss {
     pointer-events: none;
 }
+
+.on-target {
+    box-shadow: inset 0 0 50px rgba(255, 255, 255, 0.3);
+}
+
+.target {
+    background-color: rgba(255, 255, 255, 0.5) !important;
+    background-image: var(--icon-target) !important;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+
+@media (max-width: 768px) {}
 </style>

@@ -1,32 +1,38 @@
 <template>
     <div class="main">
-        <div class="container">
-            <nav>
-                <button class="play-button" @click="startGame">PLAY</button>
-                <button class="play-button" @click="callCreatedGrid">RESET</button>
-            </nav>
+        <div class="game-over-message container">
+            <div v-show="isGameOver">{{ gameOverMessage }}</div>
         </div>
-        <div class="container">
+        <div class=" container" :class="{ 'game-over': isGameOver }">
             <div class="row">
-                <div class="col">
+                <div class="col" :class="{ 'display-none': gridDisabled }">
                     <Panel>
                         <template #player>
-                            <h1>ME</h1>
+                            <font-awesome-icon :icon="['fas', 'skull']" :class="{ 'active-avatar': !gridDisabled }" />
                         </template>
-                        <Game @clickDisabled="clickDisabled" @gridToggle="disableGrid" shipClass=""
-                            :gridDisabled="gridDisabled" :disabledClick="disabledClick" />
+                        <Game ref="refME" @clickDisabled="clickDisabled" @gridToggle="disableGrid"
+                            @gameOver="gameOver('Player')" :shipClass="ship" :gridDisabled="gridDisabled"
+                            :disabledClick="disabledClick" />
                     </Panel>
                 </div>
 
-                <div class="col">
+                <div class="col" :class="{ 'display-none': !gridDisabled }">
                     <Panel>
                         <template #player>
-                            <h1>CPU</h1>
+                            <font-awesome-icon :icon="['fas', 'robot']" :class="{ 'active-avatar': gridDisabled }" />
                         </template>
-                        <Game class="pointer" @clickDisabled="clickEnabled" @gridToggle="enableGrid" shipClass="ship"
-                            :gridDisabled="!gridDisabled" />
+                        <Game ref="refCPU" class="pointer" @clickDisabled="clickEnabled" @gridToggle="enableGrid"
+                            shipClass="ship" :gridDisabled="!gridDisabled" @gameOver="gameOver('CPU')" />
                     </Panel>
                 </div>
+            </div>
+        </div>
+        <div class="container">
+            <div class="row">
+                <nav>
+                    <button class="play-button" @click="startGame"><font-awesome-icon :icon="buttonText" /></button>
+                    <button class="play-button" @click="soundDisable"><font-awesome-icon :icon="buttonSound" /></button>
+                </nav>
             </div>
         </div>
     </div>
@@ -44,20 +50,39 @@ export default {
         return {
             gridDisabled: false,
             disabledClick: false,
+            buttonText: ['fas', 'play'],
+            buttonSound: ['fas', 'volume-xmark'],
+            swich: true,
+            ship: '',
+            isGameOver: false,
+            gameOverMessage: '',
+            clickSound: new Audio('./mp3/battery.mp3'),
+            isSmallScreen: false,
         }
     },
 
     methods: {
+        startGame() {
+            if (!this.switch) {
+                this.clickSound.play();
+            }
+            this.ship = '';
+            this.isGameOver = false;
+            this.gridDisabled = false;
+            this.$refs.refME.createGrid();
+            this.$refs.refCPU.createGrid();
+            this.buttonText = ['fas', 'arrows-rotate'];
+        },
+
         disableGrid() {
             setTimeout(() => {
                 this.gridDisabled = true
-            }, 800)
-
+            }, 1500)
         },
         enableGrid() {
             setTimeout(() => {
                 this.gridDisabled = false
-            }, 800)
+            }, 1500)
         },
 
         clickDisabled() {
@@ -66,23 +91,51 @@ export default {
 
         clickEnabled() {
             this.disabledClick = false
-        }
+        },
+
+        soundDisable() {
+            this.clickSound.play();
+            this.switch = !this.switch
+            if (this.switch) {
+                this.buttonSound = ['fas', 'volume-xmark']
+            } else {
+                this.buttonSound = ['fas', 'volume-low']
+            }
+            this.$refs.refME.disabledSound();
+            this.$refs.refCPU.disabledSound();
+        },
+
+        gameOver(winner) {
+            this.ship = 'ship'
+            this.isGameOver = true;
+            this.buttonText = ['fas', 'arrows-rotate'];
+
+            // Imposta il messaggio in base a chi ha vinto
+            if (winner === 'Player') {
+                this.gameOverMessage = 'YOU WIN!';
+            } else if (winner === 'CPU') {
+                this.gameOverMessage = 'YOU LOSE!';
+            }
+        },
 
     }
 }
-
 </script>
 
 <style scoped>
 .main {
     width: 100%;
-    height: 70%;
-    background-color: var(--dark-blue)
+    height: 85%;
+    background-color: var(--dark-blue);
+    z-index: 10;
+    opacity: 0, 5;
+    /* border: 1px solid green; */
 }
 
 .row {
     display: flex;
     justify-content: space-between;
+    margin: 0 10px;
 }
 
 .pointer {
@@ -97,23 +150,52 @@ nav {
 }
 
 .play-button {
-    width: 160px;
+    width: 120px;
+    height: 60px;
+    border: 1px solid var(--medium-blue);
     background-color: var(--medium-blue);
     color: var(--dark-blue);
     display: flex;
     justify-content: center;
     align-items: center;
-    border: none;
     border-radius: 10px;
-    font-size: 30px;
-    letter-spacing: 8px;
-    font-weight: 700;
-    padding: 20px;
+    font-size: 40px;
     cursor: pointer;
-    margin-bottom: 50px;
+    margin-top: 25px;
 }
 
 .play-button:hover {
-    background-color: var(--light-blue);
+    background-color: var(--dark-blue);
+    color: var(--light-blue);
+}
+
+.game-over {
+    pointer-events: none;
+}
+
+.game-over-message {
+    display: flex;
+    justify-content: center;
+    height: 50px;
+    color: red;
+    font-size: 50px;
+    margin-bottom: 12px;
+    letter-spacing: 8px;
+    font-weight: 700;
+}
+
+.active-avatar {
+    /* color: var(--light-blue) */
+    color: rgb(255, 176, 189)
+}
+
+@media (max-width: 768px) {
+    .row {
+        justify-content: center;
+    }
+
+    .display-none {
+        display: none
+    }
 }
 </style>

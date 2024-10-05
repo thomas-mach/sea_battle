@@ -1,8 +1,11 @@
 <template>
     <div class="header">
         <div class="container">
-
-            <!-- <h1>header</h1> -->
+            <div class="row">
+                <div class="title">
+                    <p>sea-battle</p>
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -16,7 +19,26 @@ export default {
 <style scoped>
 .header {
     width: 100%;
-    height: 15%;
-    background-color: var(--dark-blue)
+    height: 10%;
+    background-color: var(--dark-blue);
+    /* border: 1px solid red; */
+}
+
+.title {
+    line-height: 100px;
+    font-size: 100px;
+    color: var(--medium-blue);
+}
+
+.row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@media (max-width: 768px) {
+    .title {
+        font-size: 80px;
+    }
 }
 </style>
