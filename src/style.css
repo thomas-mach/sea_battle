@@ -20,6 +20,12 @@
   font-style: normal;
 }
 
+body {
+  height: 100svh;
+  overflow: hidden;
+}
+
+
 .container {
   width: 1200px;
   max-height: 100%;
@@ -30,5 +36,12 @@
 @media (max-width: 768px) {
   .container {
     max-width: 100%;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  button:hover {
+    background-color: transparent;
+    color: var(--dark-blue);
   }
 }
