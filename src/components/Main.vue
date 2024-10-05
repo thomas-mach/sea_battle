@@ -168,6 +168,13 @@ nav {
     color: var(--light-blue);
 }
 
+@media (hover: none) and (pointer: coarse) {
+    .play-button:hover {
+        background-color: var(--medium-blue);
+        color: var(--dark-blue);
+    }
+}
+
 .game-over {
     pointer-events: none;
 }

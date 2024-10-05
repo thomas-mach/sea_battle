@@ -38,15 +38,3 @@ body {
     max-width: 100%;
   }
 }
-
-@media (hover: none) and (pointer: coarse) {
-  button {
-    background-color: transparent;
-    color: var(--dark-blue);
-  }
-
-  button:active {
-    background-color: var(--dark-blue);
-    color: var(--light-blue);
-  }
-}
