@@ -188,13 +188,18 @@ nav {
     color: rgb(255, 176, 189)
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .row {
         justify-content: center;
     }
 
     .display-none {
         display: none
+    }
+
+    .game-over-message {
+        height: 30px;
+        font-size: 30px;
     }
 }
 </style>

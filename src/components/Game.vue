@@ -336,7 +336,7 @@ export default {
         endGame(player) {
             const restOfShips = this.ships.filter(el => this.idsOfSunkShips.includes(el.id)); // Filtra le navi affondate
             console.log('sunked ship ids length', restOfShips.length);
-            if (restOfShips.length === 1 && !this.gameOver) {
+            if (restOfShips.length === 10 && !this.gameOver) {
                 this.gameOver = true;
                 this.autoAttack = false;
                 this.$emit('gameOver', player);
@@ -445,14 +445,14 @@ export default {
     background-repeat: no-repeat;
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .grid {
-        width: 350px;
+        width: 300px;
     }
 
     .cell {
-        width: 35px;
-        height: 35px;
+        width: 30px;
+        height: 30px;
     }
 }
 </style>

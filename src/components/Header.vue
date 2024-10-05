@@ -36,7 +36,7 @@ export default {
     align-items: center;
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .title {
         font-size: 60px;
     }
