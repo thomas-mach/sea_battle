@@ -20,7 +20,6 @@ export default {
     width: 100%;
     height: 5%;
     background-color: var(--dark-blue);
-    /* border: 1px solid blue; */
 }
 
 .row {

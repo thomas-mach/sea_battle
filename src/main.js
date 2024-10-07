@@ -5,7 +5,7 @@ import App from './App.vue'
 
 /* import the fontawesome core */
 
-import { library } from '@fortawesome/fontawesome-svg-core'
+import { library } from '@fortawesome/fontawesome-svg-core';
 import '@fortawesome/fontawesome-free/css/all.css';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faTwitter } from '@fortawesome/free-brands-svg-icons';
@@ -16,8 +16,8 @@ import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons';
 import { faVolumeXmark } from '@fortawesome/free-solid-svg-icons';
 import { faVolumeLow } from '@fortawesome/free-solid-svg-icons';
 
-library.add(faTwitter, faRobot, faSkull, faPlay, faArrowsRotate, faVolumeXmark, faVolumeLow)
+library.add(faTwitter, faRobot, faSkull, faPlay, faArrowsRotate, faVolumeXmark, faVolumeLow);
 
-const app = createApp(App)
+const app = createApp(App);
 app.component('font-awesome-icon', FontAwesomeIcon);
-app.mount('#app')
+app.mount('#app');

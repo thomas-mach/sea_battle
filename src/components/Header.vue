@@ -21,7 +21,6 @@ export default {
     width: 100%;
     height: 10%;
     background-color: var(--dark-blue);
-    /* border: 1px solid red; */
 }
 
 .title {

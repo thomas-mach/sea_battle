@@ -24,7 +24,10 @@ export default {
         return {
             rows: 10,
             cols: 10,
+            priority: 1,
             grid: [],
+            hitsTracker: [],
+            idsOfSunkShips: [],
             ships: [
                 { id: 1, length: 4 },
                 { id: 2, length: 3 },
@@ -39,9 +42,6 @@ export default {
             ],
             autoAttack: false,
             wasHit: false,
-            hitsTracker: [],
-            idsOfSunkShips: [],
-            priority: 1,
             gameOver: false,
             soundEnabled: true,
             bigFireBall: new Audio('./mp3/big_fireball.mp3'),
@@ -51,14 +51,12 @@ export default {
 
     watch: {
         gridDisabled(newValue) {
-
             setTimeout(() => {
                 if (!newValue && !this.autoAttack && !this.gameOver) {
                     this.triggerAutoAttack();
                     this.autoAttack = false; // Imposta il flag per attacco automatico
                 }
             }, 1000);
-
         },
     },
 
@@ -90,7 +88,6 @@ export default {
 
             // Posiziona tutte le navi sulla griglia
             this.ships.forEach(ship => placeShip(this.grid, ship, this.rows, this.cols));
-            // console.log(this.grid);
         },
 
         handleClick(row, col) {
@@ -101,19 +98,17 @@ export default {
                 this.autoAttack = true;
             }, 1000)
             setTimeout(() => {
-                this.endGame()
+                this.endGame();
             }, 2000)
         },
 
         launchAttack(row, col) {
-            console.log('launchAttack called');
             const cell = this.grid[row][col];
             this.onTarget(this.grid, row, col);
 
             if (cell.isShip) {
                 cell.isHit = true;
                 cell.isActive = true;
-                console.log('Hai colpito:', cell.id);
                 setTimeout(() => {
                     this.playSound(this.bigFireBall)
                 }, 1000)
@@ -129,7 +124,6 @@ export default {
         },
 
         triggerAutoAttack() {
-            console.log('AutoAttack called', this.gameOver)
             if (this.gameOver) {
                 return;
             }
@@ -137,7 +131,6 @@ export default {
             let hit = false;
             const { randomRowIndex, randomColIndex } = this.findAvailableCells();
             hit = this.launchAttack(randomRowIndex, randomColIndex);
-            console.log('lunch attack from triggerautoattack', hit)
             this.handleGridActive(randomRowIndex, randomColIndex);
 
             // Se l'attacco è un successo (colpo a segno), continua l'attacco automatico
@@ -149,7 +142,6 @@ export default {
                     this.endGame()
                     this.addPriority(randomRowIndex, randomColIndex);
                     this.checkAllShipsHit(); // Controlla se ci sono ancora navi colpite ma non affondate
-                    console.log('AUTO ATTACK:', this.grid)
                     this.triggerAutoAttack();
                 }, 2000);
             } else {
@@ -199,8 +191,6 @@ export default {
 
                 return { randomRowIndex, randomColIndex };
             }
-
-
         },
 
         checkAllShipsHit() {
@@ -231,7 +221,6 @@ export default {
         },
 
         shipSunk(ship) {
-            console.log('shipSunk called')
             let hits = 0;
             const hitCells = [];
 
@@ -288,37 +277,67 @@ export default {
                 // Verifica se la nuova cella è all'interno dei limiti della griglia
                 if (this.isWithinGrid(newRow, newCol)) {
                     this.grid[newRow][newCol].isActive = true;
-
                 }
             });
         },
 
-        // Assegna la priorità più alta alle celle circostanti la cella colpita
+        // Assegna la priorità più alta alle celle adiacenti la cella colpita
         addPriority(rowIndex, colIndex) {
             this.hitsTracker.push({ rowIndex, colIndex });
             console.log('hitTrucker', this.hitsTracker);
-            this.priority = 2
+            let surroundingOffsets;
 
-            let surroundingOffsets = [[-1, 0], [0, -1], [1, 0], [0, 1]]
-
-            if (this.hitsTracker.length > 1) {
-                const rowIndices = this.hitsTracker.map(el => el.rowIndex);
-                const isHorizontal = rowIndices.every(el => el === rowIndices[0]);
-                const colIndices = this.hitsTracker.map(el => el.colIndex);
-                const isVertical = colIndices.every(el => el === colIndices[0]);
-
-                if (isHorizontal) {
-                    console.log('Ship is horizontal');
-                    this.priority = 3
-                    surroundingOffsets = [[0, -1], [0, 1], [0, -2], [0, 2]]
-                } else if (isVertical) {
-                    console.log('Ship is vertical');
-                    this.priority = 3
-                    surroundingOffsets = [[-1, 0], [1, 0], [-2, 0], [2, 0]]
-
-                }
+            if (this.hitsTracker.length === 1) {
+                this.priority = 2;
+                surroundingOffsets = [[-1, 0], [1, 0], [0, -1], [0, 1]];
             }
 
+            // Se ci sono più di un colpo a segno, verifica la disposizione orizzontale o verticale
+            if (this.hitsTracker.length > 1) {
+                const rowIndices = this.hitsTracker.map(el => el.rowIndex);
+                const colIndices = this.hitsTracker.map(el => el.colIndex);
+
+                // Controlla se i colpi sono allineati orizzontalmente
+                const isHorizontal = rowIndices.every(el => el === rowIndices[0]);
+
+                // Controlla se i colpi sono allineati verticalmente
+                const isVertical = colIndices.every(el => el === colIndices[0]);
+
+                // Se orizzontale, modifica i surroundingOffsets
+                if (isHorizontal) {
+                    if (this.hitsTracker.length >= 2) {
+                        const secondLastCol = colIndices[colIndices.length - 2]
+                        const lastCol = colIndices[colIndices.length - 1]
+
+                        // Confronta gli ultimi due colpi per stabilire la direzione
+                        if (lastCol < secondLastCol) {
+                            this.priority = 3;
+                            surroundingOffsets = [[0, -1], [0, 2]];
+                        } else {
+                            this.priority = 3;
+                            surroundingOffsets = [[0, 1], [0, -2]];
+                        }
+                    }
+
+                    // Se verticale, modifica i surroundingOffsets
+                } if (isVertical) {
+
+                    if (this.hitsTracker.length >= 2) {
+                        const lastRow = rowIndices[rowIndices.length - 1]
+                        const secondLastRow = rowIndices[rowIndices.length - 2]
+                        // Confronta gli ultimi due colpi per stabilire la direzione
+                        if (lastRow < secondLastRow) {
+                            this.priority = 3;
+                            surroundingOffsets = [[2, 0], [-1, 0]];
+                        } else {
+                            this.priority = 3;
+                            surroundingOffsets = [[-2, 0], [1, 0]];
+                        }
+                    }
+                }
+
+            }
+            // Applica la priorità alle celle circostanti
             surroundingOffsets.forEach(offset => {
                 const newRow = rowIndex + offset[0];
                 const newCol = colIndex + offset[1];
@@ -383,6 +402,7 @@ export default {
         },
     },
 };
+
 </script>
 
 <style scoped>
@@ -447,12 +467,12 @@ export default {
 
 @media screen and (max-width: 768px) {
     .grid {
-        width: 300px;
+        width: 320px;
     }
 
     .cell {
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
     }
 }
 </style>

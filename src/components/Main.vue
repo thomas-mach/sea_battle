@@ -48,13 +48,13 @@ export default {
 
     data() {
         return {
-            gridDisabled: false,
-            disabledClick: false,
             buttonText: ['fas', 'play'],
             buttonSound: ['fas', 'volume-xmark'],
             swich: true,
-            ship: '',
+            gridDisabled: false,
+            disabledClick: false,
             isGameOver: false,
+            ship: '',
             gameOverMessage: '',
             clickSound: new Audio('./mp3/battery.mp3'),
         }
@@ -128,7 +128,6 @@ export default {
     background-color: var(--dark-blue);
     z-index: 10;
     opacity: 0, 5;
-    /* border: 1px solid green; */
 }
 
 .row {
@@ -168,13 +167,6 @@ nav {
     color: var(--light-blue);
 }
 
-@media (hover: none) and (pointer: coarse) {
-    .play-button:hover {
-        background-color: var(--medium-blue);
-        color: var(--dark-blue);
-    }
-}
-
 .game-over {
     pointer-events: none;
 }
@@ -195,6 +187,13 @@ nav {
     color: rgb(255, 176, 189)
 }
 
+@media (hover: none) and (pointer: coarse) {
+    .play-button:hover {
+        background-color: var(--medium-blue);
+        color: var(--dark-blue);
+    }
+}
+
 @media screen and (max-width: 768px) {
     .row {
         justify-content: center;
@@ -207,6 +206,10 @@ nav {
     .game-over-message {
         height: 30px;
         font-size: 30px;
+    }
+
+    .play-button {
+        -webkit-tap-highlight-color: transparent;
     }
 }
 </style>
