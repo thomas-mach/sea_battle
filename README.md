@@ -20,7 +20,7 @@ Un gioco classico della Battaglia Navale sviluppato per allenarmi con Vue.js, Ja
 - L'obiettivo è affondare tutte le navi dell'avversario prima che le tue vengano affondate.
 
 ## Screenshot 📸
-![Screenshot](../assets/sea-battle.png)
+![Screenshot](./src/assets/sea-battle.png)
 
 
 ## Futuri Miglioramenti 🔧
