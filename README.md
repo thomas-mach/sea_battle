@@ -1,6 +1,7 @@
 # Battaglia Navale 🎮⚓
 
 Un gioco classico della Battaglia Navale sviluppato per allenarmi con Vue.js, JavaScript e CSS.
+👉 [Gioca ora]( https://thomas-mach.github.io/sea_battle/) 👈
 
 ## Caratteristiche 🛠
 - Gioco interattivo con interfaccia dinamica costruita in **Vue.js**
@@ -19,11 +20,8 @@ Un gioco classico della Battaglia Navale sviluppato per allenarmi con Vue.js, Ja
 - L'obiettivo è affondare tutte le navi dell'avversario prima che le tue vengano affondate.
 
 ## Screenshot 📸
-*(Includi uno screenshot del gioco se disponibile)*
+![Screenshot](../assets/sea-battle.png)
 
-![Screenshot](./assets/sea-battle.png)
-
-👉 [Gioca ora]( https://thomas-mach.github.io/sea_battle/) 👈
 
 ## Futuri Miglioramenti 🔧
 - Miglioramento dell'algoritmo di intelligenza artificiale.
